@@ -98,7 +98,13 @@ int main(int argc, char *argv[]) {
 
 void newStencil(const int nx, const int ny, double* restrict image, double* restrict currentRow){
   double toSetTop;
-
+  for(int j = 1; j < ny-1; j++){
+    toSetTop = image[j+ny];
+    image[j+ny] = image[j+ny] * 0.6 +
+      ( + image[j  +(i+1)*ny]
+        + image[j+1+i*ny]) * 0.1;
+    currentRow[j] = toSetTop;
+  }
   for (int i = 1; i < nx-1; i++) {
     for (int j = 1; j < ny-1; j++) {
       toSetTop = image[j+i*ny];
