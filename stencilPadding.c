@@ -98,13 +98,24 @@ int main(int argc, char *argv[]) {
 
 void newStencil(const int nx, const int ny, double* restrict image, double* restrict currentRow){
   double toSetTop;
-  for(int j = 1; j < ny-1; j++){
-    toSetTop = image[j+ny];
-    image[j+ny] = image[j+ny] * 0.6 +
-      ( + image[j  +(i+1)*ny]
-        + image[j+1+i*ny]) * 0.1;
-    currentRow[j] = toSetTop;
-  }
+
+  //DE CE NU FUNCTIONEAZA????
+
+  // toSetTop = image[1+ny];
+  // image[1+ny] = image[1+ny] * 0.6 +
+  //   (image[1+2*ny]
+  //     + image[2+ny]) * 0.1;
+  // currentRow[1] = toSetTop;
+  // for(int j = 2; j < ny-1; j++){
+  //   toSetTop = image[j+ny];
+  //   image[j+ny] = image[j+ny] * 0.6 +
+  //     (image[j+2*ny]
+  //       + currentRow[j-1]
+  //       + image[j+1+ny]) * 0.1;
+  //   currentRow[j] = toSetTop;
+  // }
+  for(int j = 0; j < ny; j++)
+    currentRow[j] = 0.0;
   for (int i = 1; i < nx-1; i++) {
     for (int j = 1; j < ny-1; j++) {
       toSetTop = image[j+i*ny];
@@ -117,8 +128,7 @@ void newStencil(const int nx, const int ny, double* restrict image, double* rest
       currentRow[j] = toSetTop;
     }
   }
-  // for(int j = 0; j < ny; j++)
-  //   currentRow[j] = 0.0;
+
 }
 
 void stencil(const int nx, const int ny, double *  image, double *  tmp_image) {
