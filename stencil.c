@@ -6,13 +6,14 @@
 // Define output file name
 #define OUTPUT_FILE "stencil.pgm"
 
-void newStencil(const int nx, const int ny, double* image, double* restrict currentRow);
-void stencil(const int nx, const int ny, double * restrict image, double * restrict  tmp_image);
-void init_image(const int nx, const int ny, double * image, double * tmp_image);
-void output_image(const char * file_name, const int nx, const int ny, double *image);
+void stencil(const int nx, const int ny, float image[][nx], float tmp_image[][nx]);
+void init_image(const int nx, const int ny, float image[][nx], float tmp_image[][nx]);
+void output_image(const char * file_name, const int nx, const int ny, float image[][nx]);
 double wtime(void);
 
 int main(int argc, char *argv[]) {
+
+  printf("enters main");
 
   // Check usage
   if (argc != 4) {
@@ -26,20 +27,20 @@ int main(int argc, char *argv[]) {
   int niters = atoi(argv[3]);
 
   // Allocate the image
-  double *image = malloc(sizeof(double)*(nx+2)*(ny+2));
-  double *tmp_image = malloc(sizeof(double)*(nx+2)*(ny+2));
-  double *currentRow = malloc(sizeof(double)*(ny+2));
+  // float *image = malloc(sizeof(float)*(nx+2)*(ny+2));
+  // float *tmp_image = malloc(sizeof(float)*(nx+2)*(ny+2));
 
-  for(int i = 0; i < ny+2; i++){
-    currentRow[i] = 0;
-  }
+  float image[nx+2][ny+2];
+  float tmp_image[nx+2][ny+2];
 
   // Set the input image
   init_image(nx+2, ny+2, image, tmp_image);
 
   // Call the stencil kernel
+  printf("%d", niters);
   double tic = wtime();
   for (int t = 0; t < niters; ++t) {
+    printf("%d iteration\n", t);
     stencil(nx+2, ny+2, image, tmp_image);
     stencil(nx+2, ny+2, tmp_image, image);
   }
@@ -57,65 +58,31 @@ int main(int argc, char *argv[]) {
   printf("------------------------------------\n");
 
   output_image(OUTPUT_FILE, nx+2, ny+2, image);
-  free(image);
 }
 
-void newStencil(const int nx, const int ny, double* restrict image, double* restrict currentRow){
-  double toSetTop;
-
-  //DE CE NU FUNCTIONEAZA????
-
-  // toSetTop = image[1+ny];
-  // image[1+ny] = image[1+ny] * 0.6 +
-  //   (image[1+2*ny]
-  //     + image[2+ny]) * 0.1;
-  // currentRow[1] = toSetTop;
-  // for(int j = 2; j < ny-1; j++){
-  //   toSetTop = image[j+ny];
-  //   image[j+ny] = image[j+ny] * 0.6 +
-  //     (image[j+2*ny]
-  //       + currentRow[j-1]
-  //       + image[j+1+ny]) * 0.1;
-  //   currentRow[j] = toSetTop;
-  // }
-  for(int j = 0; j < ny; j++)
-    currentRow[j] = 0.0;
-  for (int i = 1; i < nx-1; i++) {
-    for (int j = 1; j < ny-1; j++) {
-      toSetTop = image[j+i*ny];
-      // UPDATE 1 : 3.0 / 5 -> 0.6
-      image[j+i*ny] = image[j+i*ny] * 0.6 +
-        (currentRow[j]
-          + image[j  +(i+1)*ny]
-          + currentRow[j - 1]
-          + image[j+1+i*ny]) * 0.1;
-      currentRow[j] = toSetTop;
-    }
-  }
-
-}
-
-void stencil(const int nx, const int ny, double * restrict image, double * restrict tmp_image) {
+void stencil(const int nx, const int ny, float image[][nx], float tmp_image[][nx]) {
   // UPDATE 2 : change order of fors
+  // printf("Entered stencil");
   for (int i = 1; i < nx-1; i++) {
     for (int j = 1; j < ny-1; j++) {
       // UPDATE 1 : 3.0 / 5 -> 0.6
-      tmp_image[j+i*ny] = image[j+i*ny] * 0.6 +
-        (image[j  +(i-1)*ny] +
-         image[j  +(i+1)*ny] +
-         image[j  -  1+i*ny] +
-         image[j  +  1+i*ny]) * 0.1;
+      // printf("%d %d  ", i, j);
+      tmp_image[i][j] = image[i][j] * 0.6 +
+        (image[i-1][j] +
+         image[i+1][j] +
+         image[i][j-1] +
+         image[i][j+1]) * 0.1;
     }
   }
 }
 
 // Create the input image
-void init_image(const int nx, const int ny, double * image, double * tmp_image) {
+void init_image(const int nx, const int ny, float image[][nx], float tmp_image[][nx]) {
   // Zero everything
   for (int j = 0; j < ny; ++j) {
     for (int i = 0; i < nx; ++i) {
-      image[j+i*ny] = 0.0;
-      tmp_image[j+i*ny] = 0.0;
+      image[i][j] = 0.0;
+      tmp_image[i][j] = 0.0;
     }
   }
 
@@ -125,7 +92,7 @@ void init_image(const int nx, const int ny, double * image, double * tmp_image) 
       for (int jj = j*(ny-2)/8; jj < (j+1)*(ny-2)/8; ++jj) {
         for (int ii = i*(nx-2)/8; ii < (i+1)*(nx-2)/8; ++ii) {
           if ((i+j)%2)
-          image[(jj+1)+(ii+1)*ny] = 100.0;
+          image[ii+1][jj+1] = 100.0;
         }
       }
     }
@@ -133,7 +100,7 @@ void init_image(const int nx, const int ny, double * image, double * tmp_image) 
 }
 
 // Routine to output the image in Netpbm grayscale binary image format
-void output_image(const char * file_name, const int nx, const int ny, double *image) {
+void output_image(const char * file_name, const int nx, const int ny, float image[][nx]) {
 
   // Open output file
   FILE *fp = fopen(file_name, "w");
@@ -151,14 +118,14 @@ void output_image(const char * file_name, const int nx, const int ny, double *im
   double maximum = 0.0;
   for (int j = 1; j < ny-1; ++j) {
     for (int i = 1; i < nx-1; ++i) {
-      if (image[j+i*ny] > maximum)
-        maximum = image[j+i*ny];
+      if (image[j][i] > maximum)
+        maximum = image[i][j];
     }
   }
   // Output image, converting to numbers 0-255
   for (int j = 1; j < ny-1; ++j) {
     for (int i = 1; i < nx-1; ++i) {
-      fputc((char)(255.0*image[j+i*ny]/maximum), fp);
+      fputc((char)(255.0*image[i][j]/maximum), fp);
     }
   }
 

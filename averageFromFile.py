@@ -20,6 +20,6 @@ print(sum)
 # module load languages/intel-compiler-16-u2
 # module av
 # module av | grep intel
-
+# module load tools/git-2.18.0
 # qsub stencil.job
 # qstat -u aa16366
