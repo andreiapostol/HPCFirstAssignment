@@ -7,8 +7,8 @@
 #define OUTPUT_FILE "stencil.pgm"
 
 void newStencil(const int nx, const int ny, double* image, double* restrict currentRow);
-void stencil(const int nx, const int ny, double *  image, double * restrict  tmp_image);
-void init_image(const int nx, const int ny, double * image);
+void stencil(const int nx, const int ny, double * restrict image, double * restrict  tmp_image);
+void init_image(const int nx, const int ny, double * image, double * tmp_image);
 void output_image(const char * file_name, const int nx, const int ny, double *image);
 double wtime(void);
 
@@ -27,6 +27,7 @@ int main(int argc, char *argv[]) {
 
   // Allocate the image
   double *image = malloc(sizeof(double)*(nx+2)*(ny+2));
+  double *tmp_image = malloc(sizeof(double)*(nx+2)*(ny+2));
   double *currentRow = malloc(sizeof(double)*(ny+2));
 
   for(int i = 0; i < ny+2; i++){
@@ -34,17 +35,17 @@ int main(int argc, char *argv[]) {
   }
 
   // Set the input image
-  init_image(nx+2, ny+2, image);
+  init_image(nx+2, ny+2, image, tmp_image);
 
   // Call the stencil kernel
   double tic = wtime();
-  // for (int t = 0; t < niters; ++t) {
-  //   stencil(nx, ny, image, tmp_image);
-  //   stencil(nx, ny, tmp_image, image);
-  // }
-  for(int t = 0; t < 2 * niters - 1; ++t){
-    newStencil(nx+2, ny+2, image, currentRow);
+  for (int t = 0; t < niters; ++t) {
+    stencil(nx+2, ny+2, image, tmp_image);
+    stencil(nx+2, ny+2, tmp_image, image);
   }
+  // for(int t = 0; t < 2 * niters - 1; ++t){
+  //   newStencil(nx+2, ny+2, image, currentRow);
+  // }
 
   double toc = wtime();
 
@@ -58,43 +59,6 @@ int main(int argc, char *argv[]) {
   output_image(OUTPUT_FILE, nx+2, ny+2, image);
   free(image);
 }
-
-// void newStencil(const int nx, const int ny, double* restrict image, double* restrict currentRow){
-//   double toSetTop;
-//   for (int j = 0; j < ny; j++) {
-//     int i = 0;
-//     toSetTop = image[j+i*ny];
-//     // UPDATE 1 : 3.0 / 5 -> 0.6
-//     image[j+i*ny] = image[j+i*ny] * 0.6;
-//     if (i < nx-1) image[j+i*ny] += image[j  +(i+1)*ny] * 0.1;
-//     if (j > 0)    image[j+i*ny] += currentRow[j - 1] * 0.1;
-//     if (j < ny-1) image[j+i*ny] += image[j+1+i*ny] * 0.1;
-//     currentRow[j] = toSetTop;
-//   }
-//   for (int i = 1; i < nx-1; i++) {
-//     for (int j = 0; j < ny; j++) {
-//       toSetTop = image[j+i*ny];
-//       // UPDATE 1 : 3.0 / 5 -> 0.6
-//       image[j+i*ny] = image[j+i*ny] * 0.6;
-//       image[j+i*ny] += currentRow[j] * 0.1;
-//       image[j+i*ny] += image[j  +(i+1)*ny] * 0.1;
-//       if (j > 0)    image[j+i*ny] += currentRow[j - 1] * 0.1;
-//       if (j < ny-1) image[j+i*ny] += image[j+1+i*ny] * 0.1;
-//       currentRow[j] = toSetTop;
-//     }
-//   }
-//
-//   for (int j = 0; j < ny; j++) {
-//     int i = nx-1;
-//     toSetTop = image[j+i*ny];
-//     // UPDATE 1 : 3.0 / 5 -> 0.6
-//     image[j+i*ny] = image[j+i*ny] * 0.6;
-//     if (i > 0)    image[j+i*ny] += currentRow[j] * 0.1;
-//     if (j > 0)    image[j+i*ny] += currentRow[j - 1] * 0.1;
-//     if (j < ny-1) image[j+i*ny] += image[j+1+i*ny] * 0.1;
-//     currentRow[j] = toSetTop;
-//   }
-// }
 
 void newStencil(const int nx, const int ny, double* restrict image, double* restrict currentRow){
   double toSetTop;
@@ -131,28 +95,27 @@ void newStencil(const int nx, const int ny, double* restrict image, double* rest
 
 }
 
-void stencil(const int nx, const int ny, double *  image, double *  tmp_image) {
+void stencil(const int nx, const int ny, double * restrict image, double * restrict tmp_image) {
   // UPDATE 2 : change order of fors
-
-
-  for (int i = 0; i < nx; i++) {
-    for (int j = 0; j < ny; j++) {
+  for (int i = 1; i < nx-1; i++) {
+    for (int j = 1; j < ny-1; j++) {
       // UPDATE 1 : 3.0 / 5 -> 0.6
-      tmp_image[j+i*ny] = image[j+i*ny] * 0.6;
-      if (i > 0)    tmp_image[j+i*ny] += image[j  +(i-1)*ny] * 0.1;
-      if (i < nx-1) tmp_image[j+i*ny] += image[j  +(i+1)*ny] * 0.1;
-      if (j > 0)    tmp_image[j+i*ny] += image[j-1+i*ny] * 0.1;
-      if (j < ny-1) tmp_image[j+i*ny] += image[j+1+i*ny] * 0.1;
+      tmp_image[j+i*ny] = image[j+i*ny] * 0.6 +
+        (image[j  +(i-1)*ny] +
+         image[j  +(i+1)*ny] +
+         image[j  -  1+i*ny] +
+         image[j  +  1+i*ny]) * 0.1;
     }
   }
 }
 
 // Create the input image
-void init_image(const int nx, const int ny, double * image) {
+void init_image(const int nx, const int ny, double * image, double * tmp_image) {
   // Zero everything
   for (int j = 0; j < ny; ++j) {
     for (int i = 0; i < nx; ++i) {
       image[j+i*ny] = 0.0;
+      tmp_image[j+i*ny] = 0.0;
     }
   }
 
