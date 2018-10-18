@@ -50,7 +50,9 @@ int main(int argc, char *argv[]) {
 }
 
 void stencil(const int nx, const int ny, float * restrict image, float * restrict tmp_image) {
+  #pragma unroll(16)
   for( int i = 1; i < nx-1; i++ ) {
+    __builtin_prefetch(&image[(i - 1) * ny], 0, 3);
     for( int j = 1; j < ny-1; j++ ) {
       tmp_image[ j + i * ny ]  = image[ j +i * ny ] * 0.6  +
                                ( image[ j + (i - 1) * ny ] +

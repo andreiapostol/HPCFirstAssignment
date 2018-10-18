@@ -16,7 +16,7 @@ print(sum)
 # rm results.txt; for i in `seq 1 100`; do ./stencilPadding 1024 1024 100 | head -n 2 | tail -n 1| awk '{ print $2}' >> results.txt; done
 # gcc -std=c99 -Wall -O3 stencilPadding.c -o stencilPadding
 
-
+# module load languages/python-2.7.6
 # module load languages/intel-compiler-16-u2
 # module av
 # module av | grep intel
