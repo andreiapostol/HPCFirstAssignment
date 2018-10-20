@@ -12,7 +12,7 @@ print(sum)
 # stencilPadding cu O3: 24.628428
 
 
-# python check.py --ref-stencil-file stencil_8000_8000_100.pgm --stencil-file stencil.pgm
+# python check.py --ref-stencil-file stencil_1024_1024_100.pgm --stencil-file stencil.pgm
 # rm results.txt; for i in `seq 1 100`; do ./stencilPadding 1024 1024 100 | head -n 2 | tail -n 1| awk '{ print $2}' >> results.txt; done
 # gcc -std=c99 -Wall -O3 stencilPadding.c -o stencilPadding
 
